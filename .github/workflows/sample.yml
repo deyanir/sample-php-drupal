@@ -26,22 +26,38 @@ jobs:
           tools: composer:v1
           coverage: none
 
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
+      # - name: Cache composer dependencies
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: vendor
+      #     key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-composer-
 
-      - name: Remove vendor directory
-        run: rm -rf vendor
+      # - name: Remove vendor directory
+      #   run: rm -rf vendor
 
       - name: Validate composer.json
         run: composer validate --no-check-all --ansi
 
       - name: Install composer dependencies (no dev)
         run: composer install --no-dev --optimize-autoloader
+
+      - name: Build package (tar)
+        run: |
+          mkdir -p build
+          # include whatever you need (core, modules, vendor, web root)
+          cp -R web build/web || true
+          cp -R vendor build/vendor || true
+          # adjust included paths as needed for your Drupal app
+          tar -czf build/package.tar.gz -C build .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-package
+          path: build/package.tar.gz
+          retention-days: 5
 
       # - name: Cache Composer & Drupal vendor dirs
       #   uses: actions/cache@v4
