@@ -92,7 +92,7 @@ jobs:
       - name: Download vendor directory
         uses: actions/download-artifact@v4
         with:
-          name: build artifact
+          name: build-package
           path: ./artifact
       - name: Extract artifact
         run: |
