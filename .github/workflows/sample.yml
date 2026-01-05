@@ -51,6 +51,7 @@ jobs:
           cp -R vendor build/vendor || true
           # adjust included paths as needed for your Drupal app
           tar -czf build/package.tar.gz -C build .
+          mv package.tar.gz build/package.tar.gz
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
