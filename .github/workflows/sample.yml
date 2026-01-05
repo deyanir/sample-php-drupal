@@ -1,0 +1,72 @@
+name: Total WAT NEXT CI/CD
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  APP_NAME: "Total WAT NEXT"
+  SCRIPT_DIR: ./scripts/blt-gitlab-pipelines
+  PHP_VERSION: "8.3"
+  NODE_VERSION: "20.x"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer
+          coverage: none
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Remove vendor directory
+        run: rm -rf vendor
+
+      - name: Validate composer.json
+        run: composer validate --no-check-all --ansi
+
+      - name: Install composer dependencies (no dev)
+        run: composer install --no-dev --optimize-autoloader
+
+      # - name: Cache Composer & Drupal vendor dirs
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       vendor
+      #       docroot/core
+      #       docroot/libraries
+      #       docroot/modules/contrib
+      #       docroot/themes/contrib
+      #       docroot/profiles/contrib
+      #       ~/.composer/cache
+      #       ~/.npm
+      #     key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ hashFiles('**/composer.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-build-${{ github.ref_name }}-
+      #       ${{ runner.os }}-build-
+      
+      # - name: Composer validate
+      #   run: composer validate --no-check-all --ansi
+        
+      # - name: Composer install (prod)
+      #   run: |
+      #     rm -rf vendor
+      #     composer install --no-dev --optimize-autoloade
+
+
+    
