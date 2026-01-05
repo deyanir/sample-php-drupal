@@ -45,13 +45,15 @@ jobs:
 
       - name: Build package (tar)
         run: |
+          rm -rf build
           mkdir -p build
-          # include whatever you need (core, modules, vendor, web root)
           cp -R web build/web || true
           cp -R vendor build/vendor || true
-          # adjust included paths as needed for your Drupal app
-          tar -czf build/package.tar.gz -C build .
-          mv package.tar.gz build/package.tar.gz
+          (
+            cd build
+            tar -czf package.tar.gz .
+           )
+          ls -la build/package.tar.gz
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
