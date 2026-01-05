@@ -43,17 +43,38 @@ jobs:
       - name: Install composer dependencies (no dev)
         run: composer install --no-dev --optimize-autoloader
 
+      
       - name: Build package (tar)
+        shell: bash
         run: |
-          rm -rf build
-          mkdir -p build
-          cp -R web build/web || true
-          cp -R vendor build/vendor || true
-          (
-            cd build
-            tar -czf package.tar.gz .
-           )
-          ls -la build/package.tar.gz
+          set -euo pipefail
+      
+          # Clean and create staging
+          rm -rf build build_staging
+          mkdir -p build build_staging
+      
+          # Adjust paths for your Drupal app:
+          # If your web root is "docroot" (common in Drupal), copy that instead of "web"
+          # rsync is safer than cp and preserves attributes
+          if [ -d web ]; then
+            rsync -a --delete web/ build_staging/web/
+          fi
+      
+          if [ -d docroot ]; then
+            rsync -a --delete docroot/ build_staging/docroot/
+          fi
+      
+          # Include vendor dependencies (after composer install)
+          if [ -d vendor ]; then
+            rsync -a --delete vendor/ build_staging/vendor/
+          fi
+      
+          # Create the archive OUTSIDE the staging directory
+          tar -czf build/package.tar.gz -C build_staging .
+      
+          # Preview result
+          ls -lah build/package.tar.gz
+
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
