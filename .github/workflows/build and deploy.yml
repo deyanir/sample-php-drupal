@@ -52,7 +52,7 @@ jobs:
 
       # ---------- Push to Acquia ----------
       - name: Setup SSH key for Acquia Git
-        uses: webfactory/ssh-agent@v0.8.1
+        uses: webfactory/ssh-agent@v0
         with:
           ssh-private-key: ${{ secrets.ACQUIA_SSH_PRIVATE_KEY }}
 
