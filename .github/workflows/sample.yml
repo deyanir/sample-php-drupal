@@ -43,4 +43,25 @@ jobs:
       - name: Install composer dependencies (no dev)
         run: composer install --no-dev --optimize-autoloader
 
+      - name: Install Acquia CLI
+        run: |
+          curl -fsSL https://github.com/acquia/cli/releases/latest/download/acli.phar -o /usr/local/bin/acli
+          chmod +x /usr/local/bin/acli
+      - name: Authenticate with Acquia Cloud
+        env:
+          ACQUIA_API_KEY: ${{ secrets.ACQUIA_API_KEY }}
+          ACQUIA_API_SECRET: ${{ secrets.ACQUIA_API_SECRET }}
+        run: |
+          acli auth:login --key "$ACQUIA_API_KEY" --secret "$ACQUIA_API_SECRET"
+
+      - name: Deploy to Acquia Cloud
+        env:
+          ACQUIA_SITE_UUID: ${{ secrets.ACQUIA_SITE_UUID }}
+        run: |
+          # Replace with your actual Acquia deployment command
+          # Example: Push code to Acquia Cloud environment
+          acli push "$ACQUIA_SITE_UUID" --yes
+
+      
+
       
