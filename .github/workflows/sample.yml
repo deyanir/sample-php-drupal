@@ -1,4 +1,4 @@
-name: Total WAT NEXT CI/CD
+name: Build and deploy
 
 on:
   push:
@@ -26,13 +26,13 @@ jobs:
           tools: composer:v1
           coverage: none
 
-      # - name: Cache composer dependencies
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: vendor
-      #     key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-composer-
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
       # - name: Remove vendor directory
       #   run: rm -rf vendor
@@ -44,63 +44,3 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
 
       
-      - name: Build package (tar)
-        shell: bash
-        run: |
-          set -euo pipefail
-      
-          # Clean and create staging
-          rm -rf build build_staging
-          mkdir -p build build_staging
-      
-          # Adjust paths for your Drupal app:
-          # If your web root is "docroot" (common in Drupal), copy that instead of "web"
-          # rsync is safer than cp and preserves attributes
-          if [ -d web ]; then
-            rsync -a --delete web/ build_staging/web/
-          fi
-      
-          if [ -d docroot ]; then
-            rsync -a --delete docroot/ build_staging/docroot/
-          fi
-      
-          # Include vendor dependencies (after composer install)
-          if [ -d vendor ]; then
-            rsync -a --delete vendor/ build_staging/vendor/
-          fi
-      
-          # Create the archive OUTSIDE the staging directory
-          tar -czf build/package.tar.gz -C build_staging .
-      
-          # Preview result
-          ls -lah build/package.tar.gz
-
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-package
-          path: build/package.tar.gz
-          retention-days: 5
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download vendor directory
-        uses: actions/download-artifact@v4
-        with:
-          name: build-package
-          path: ./artifact
-      - name: Extract artifact
-        run: |
-          mkdir -p extracted
-          tar -xzf ./artifact/package.tar.gz -C extracted
-
-      - name: Deploy artifact
-        run: ./scripts/blt-gitlab-pipelines/deploy_artifact.sh
-
-
-    
