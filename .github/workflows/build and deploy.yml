@@ -82,10 +82,3 @@ jobs:
         run: |
           echo "Code pushed to Acquia Git remote. Acquia will run its deployment pipeline for the environment associated with the target branch."
 
-      - name: Optional: Trigger post-deploy tasks via Acquia Cloud API (placeholder)
-        if: ${{ secrets.ACQUIA_TRIGGER_API_TOKEN != '' }}
-        env:
-          ACQUIA_API_TOKEN: ${{ secrets.ACQUIA_TRIGGER_API_TOKEN }}
-          ACQUIA_SUBSCRIPTION: ${{ secrets.ACQUIA_SUBSCRIPTION }}    # e.g. account/uuid values as required
-        run: |
-          echo "If you have an Acquia API token and want to trigger additional actions (clear cache, run DB updates, etc.), implement it here using Acquia API or Acquia CLI."
