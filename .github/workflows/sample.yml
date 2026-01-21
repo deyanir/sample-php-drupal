@@ -9,7 +9,7 @@ on:
 env:
   APP_NAME: "Total WAT NEXT"
   SCRIPT_DIR: ./scripts/blt-gitlab-pipelines
-  PHP_VERSION: "7.4"
+  PHP_VERSION: "8.2"
   NODE_VERSION: "20.x"
 
 jobs:
