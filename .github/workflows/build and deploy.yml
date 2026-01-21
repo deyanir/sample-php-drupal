@@ -50,16 +50,6 @@ jobs:
             echo "No phpunit config found; skipping tests."
           fi
 
-      - name: Optional: build assets (if you have frontend build step)
-        if: files('package.json') != '' || always()
-        run: |
-          if [ -f package.json ]; then
-            npm ci
-            npm run build || echo "No npm build script"
-          else
-            echo "No package.json; skipping frontend build."
-          fi
-
       # ---------- Push to Acquia ----------
       - name: Setup SSH key for Acquia Git
         uses: webfactory/ssh-agent@v0.8.1
