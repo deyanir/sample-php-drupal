@@ -1,0 +1,101 @@
+name: Build & Deploy to Acquia
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  workflow_dispatch:
+
+env:
+  APP_NAME: "POC app"
+  PHP_VERSION: "7.4"
+
+jobs:
+  build-and-push-to-acquia:
+    name: Build → Push to Acquia Git (triggers Acquia deploy)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout (for push must disable persisted credentials)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Validate composer.json
+        run: composer validate --no-check-all --ansi
+
+      - name: Install composer dependencies (no-dev)
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Run tests (fail build if tests fail)
+        run: |
+          if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
+            vendor/bin/phpunit --colors=always
+          else
+            echo "No phpunit config found; skipping tests."
+          fi
+
+      - name: Optional: build assets (if you have frontend build step)
+        if: files('package.json') != '' || always()
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm run build || echo "No npm build script"
+          else
+            echo "No package.json; skipping frontend build."
+          fi
+
+      # ---------- Push to Acquia ----------
+      - name: Setup SSH key for Acquia Git
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.ACQUIA_SSH_PRIVATE_KEY }}
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+      - name: Add Acquia remote and push
+        env:
+          ACQUIA_GIT_REMOTE: ${{ secrets.ACQUIA_GIT_REMOTE }}        # ssh URL of Acquia Git remote
+          ACQUIA_TARGET_BRANCH: ${{ secrets.ACQUIA_TARGET_BRANCH }}  # branch on Acquia remote to push to (e.g. master)
+        run: |
+          : "${ACQUIA_TARGET_BRANCH:=master}"
+          if [ -z "${ACQUIA_GIT_REMOTE:-}" ]; then
+            echo "ACQUIA_GIT_REMOTE secret is not set. Aborting."
+            exit 1
+          fi
+
+          # Add remote and push current HEAD to the target branch on Acquia
+          git remote add acquia "${ACQUIA_GIT_REMOTE}"
+          # Force update the remote branch so the remote receives the exact CI-built tree
+          echo "Pushing to Acquia remote branch '${ACQUIA_TARGET_BRANCH}'..."
+          git push --force acquia "HEAD:${ACQUIA_TARGET_BRANCH}"
+
+      - name: Wait / notify (optional)
+        run: |
+          echo "Code pushed to Acquia Git remote. Acquia will run its deployment pipeline for the environment associated with the target branch."
+
+      - name: Optional: Trigger post-deploy tasks via Acquia Cloud API (placeholder)
+        if: ${{ secrets.ACQUIA_TRIGGER_API_TOKEN != '' }}
+        env:
+          ACQUIA_API_TOKEN: ${{ secrets.ACQUIA_TRIGGER_API_TOKEN }}
+          ACQUIA_SUBSCRIPTION: ${{ secrets.ACQUIA_SUBSCRIPTION }}    # e.g. account/uuid values as required
+        run: |
+          echo "If you have an Acquia API token and want to trigger additional actions (clear cache, run DB updates, etc.), implement it here using Acquia API or Acquia CLI."
